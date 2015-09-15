@@ -48,6 +48,7 @@ Write-Output $fullName
 # Get $userName's AD groups
 $userNameGroups = Get-ADUser -Identity $userName -Properties memberOf
 $groups = $userNameGroups.memberOf | ForEach-Object { Get-ADGroup $_ }
+
 # Debugging to ensure that groups are being selected properly
 Write-Output ""
 Write-Output $groups
@@ -71,54 +72,23 @@ function Get-Confirmation
 
 # Code that populates $userName and starts the Termination process
 if (Get-Confirmation -User $userName) {
+    
     # If  confirmation == True: start Termination
     
-    # Copy user's security groups to groups.txt in their user folder
-    # Old Way
-	#Get-ADPrincipalGroupMembership -Identity $userName | Out-File -FilePath "\\path\to\user\folder\groups.txt"
-    
     # Copy user's security groups to $groups.txt in their user folder
-    # New way -> Better formatting
     Out-File $logFilePath -InputObject $userNameGroups.memberOf -Encoding utf8
     
     # TODO: Remove $userName's security groups from AD Object
     # Remove-ADGroupMember -Identity $_ -Members $userNameGroups -Confirm:$false
     
     # FYI: The backtick after the end quotes continues this command to the line directly after it because it's a really long line
-    #Copy-Item -Path "\\path\to\active\user\folder" ` 
-    #-Destination "\\path\to\terminated\user\folder"
+    Copy-Item -Path "\\path\to\active\user\folder" ` 
+    -Destination "\\path\to\terminated\user\folder"
     
 } else {
     # Don't Terminate
     # TODO: Restart script to select another user
 }
-
-<# OLD SWITCH STATEMENT
-# Switch statement to start here
-$switchTitle = "Terminate User"
-$confirmMessage = "Are you sure that " + $fullName + " is the user that you want to terminate?"
-
-$yes = New-Object System.Management.Automation.Host.ChoiceDescription "&Yes",
-   "Starts the termination process for the selected user"
-
-$no = New-Object System.Management.Automation.Host.ChoiceDescription "&No",
-   "Cancels the termination process and, eventually, will prompt for another user selection"
-
-$options = [System.Management.Automation.Host.ChoiceDescription[]]($yes, $no)
-
-$result = $host.ui.PromptForChoice($switchTitle, $confirmMessage, $options, 0)
-
-switch ($result)
-   {
-      # TODO: Copy Folder Redirection (\\roamingprofiles$\FolderRedirection$\userName) to term, delete Citrix Profile, disable AD Account
-      0 {"You have selected Yes. The Termination Script will now start."
-           Copy-Item -Path "Microsoft.PowerShell.Core\FileSystem::\\path\to\user\folder" ` 
-           -Destination "Microsoft.PowerShell.Core\FileSystem::\\path\to\terminated\user\share" -Recurse -Force
-        }
-      1 {"You have selected No. Please choose another user."}
-   }
-   
-#>
 
 ### DEBUGGING CODE ###
 Read-Host -Prompt "Press Enter to exit"
