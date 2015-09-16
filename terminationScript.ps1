@@ -27,19 +27,40 @@
 
 import-module activedirectory
 
-# Prompt the user to input Employees' first and last name
-Write-Host "Welcome to the NorthStar Termination Script."
-$firstName = Read-Host "Please input the Employees' first name"
-$lastName = Read-Host "Please input the Employees' last name"
+Do
+{
+    # Prompt the user to input Employees' first and last name
+    Write-Host "Welcome to the NorthStar Termination Script."
+    $firstName = Read-Host "Please input the Employees' first name"
+    $lastName = Read-Host "Please input the Employees' last name"
 
-# Extract first character of $firstName 
-$firstName = $firstName.Substring(0,1)
+    # Extract first character of $firstName 
+    $firstName = $firstName.Substring(0,1)
 
-# Concatenate firstName with lastName to new variable userName
-$userName = ($firstName + $lastName)
+    # Concatenate firstName with lastName to new variable userName
+    $userName = ($firstName + $lastName)
 
-# Just in case the user wants to search by first and last name instead of userName
-$searchName = ($firstName + " " + $lastName)
+    # Just in case the user wants to search by first and last name instead of userName
+    $searchName = ($firstName + " " + $lastName)
+
+    Try
+    {
+        # Check if it's in AD
+        $checkUsername = Get-ADUser -Identity $userName -ErrorAction Stop
+    }
+    Catch
+    {
+        # Couldn't be found
+        Write-Warning -Message "Could not find a user with the username: $userName. Please check the spelling and try again."
+
+        # Loop de loop (Restart)
+        $userName = $null
+    }
+}
+While ($userName -eq $null)
+
+# Do-While succeeded so username is correct
+# Put script to run if input is correct here
 
 # Searches AD for userName and prints the user's fullName and title 
 $fullName = Get-ADUser -Identity $userName -Properties * | Select -Property Name, Title
@@ -54,71 +75,16 @@ Write-Output $groups
 
 $logFilePath = "\\\path\to\user\folder\groups.txt"
 
-# Prompts the script user to confirm that the account from $userName is indeed the one they want to Terminate
-function Get-Confirmation 
-{
-    [CmdletBinding(SupportsShouldProcess=$true)]
-    param (
-        [Parameter(Mandatory=$true)]
-        [String]
-        $userName
-    )
+# Copy user's security groups to $groups.txt in their user folder
+Out-File $logFilePath -InputObject $userNameGroups.memberOf -Encoding utf8
 
-    $confirmMessage = 'Are you sure that {0} is the user that you want to terminate?' -f $userName
+# TODO: Remove $userName's security groups from AD Object
+# Remove-ADGroupMember -Identity $_ -Members $userNameGroups -Confirm:$false
 
-    $PSCmdlet.ShouldContinue($confirmMessage, 'Terminate User?')
-}
-
-# Code that populates $userName and starts the Termination process
-if (Get-Confirmation -User $userName) {
-    # If  confirmation == True: start Termination
+# FYI: The backtick after the end quotes continues this command to the line directly after it because it's a really long line
+Copy-Item -Path "\\path\to\active\user\folder" `
+    -Destination "\\path\to\terminated\user\folder"
     
-    # Copy user's security groups to groups.txt in their user folder
-    # Old Way
-	#Get-ADPrincipalGroupMembership -Identity $userName | Out-File -FilePath "\\path\to\user\folder\groups.txt"
-    
-    # Copy user's security groups to $groups.txt in their user folder
-    # New way -> Better formatting
-    Out-File $logFilePath -InputObject $userNameGroups.memberOf -Encoding utf8
-    
-    # TODO: Remove $userName's security groups from AD Object
-    # Remove-ADGroupMember -Identity $_ -Members $userNameGroups -Confirm:$false
-    
-    # FYI: The backtick after the end quotes continues this command to the line directly after it because it's a really long line
-    #Copy-Item -Path "\\path\to\active\user\folder" ` 
-    #-Destination "\\path\to\terminated\user\folder"
-    
-} else {
-    # Don't Terminate
-    # TODO: Restart script to select another user
-}
-
-<# OLD SWITCH STATEMENT
-# Switch statement to start here
-$switchTitle = "Terminate User"
-$confirmMessage = "Are you sure that " + $fullName + " is the user that you want to terminate?"
-
-$yes = New-Object System.Management.Automation.Host.ChoiceDescription "&Yes",
-   "Starts the termination process for the selected user"
-
-$no = New-Object System.Management.Automation.Host.ChoiceDescription "&No",
-   "Cancels the termination process and, eventually, will prompt for another user selection"
-
-$options = [System.Management.Automation.Host.ChoiceDescription[]]($yes, $no)
-
-$result = $host.ui.PromptForChoice($switchTitle, $confirmMessage, $options, 0)
-
-switch ($result)
-   {
-      # TODO: Copy Folder Redirection (\\roamingprofiles$\FolderRedirection$\userName) to term, delete Citrix Profile, disable AD Account
-      0 {"You have selected Yes. The Termination Script will now start."
-           Copy-Item -Path "Microsoft.PowerShell.Core\FileSystem::\\path\to\user\folder" ` 
-           -Destination "Microsoft.PowerShell.Core\FileSystem::\\path\to\terminated\user\share" -Recurse -Force
-        }
-      1 {"You have selected No. Please choose another user."}
-   }
-   
-#>
 
 ### DEBUGGING CODE ###
 Read-Host -Prompt "Press Enter to exit"
