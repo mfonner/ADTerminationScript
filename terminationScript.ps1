@@ -23,6 +23,9 @@
   
 .PARAMETER $userNameGroups
   Used just to select $userName's AD groups and write them to the screen
+  
+.PARAMETER $checkUsername
+  Error checking that $userName exists in AD
 #>
 
 import-module activedirectory
@@ -53,14 +56,13 @@ Do
         # Couldn't be found
         Write-Warning -Message "Could not find a user with the username: $userName. Please check the spelling and try again."
 
-        # Loop de loop (Restart)
+        # Restart the loop
         $userName = $null
     }
 }
 While ($userName -eq $null)
 
 # Do-While succeeded so username is correct
-# Put script to run if input is correct here
 
 # Searches AD for userName and prints the user's fullName and title 
 $fullName = Get-ADUser -Identity $userName -Properties * | Select -Property Name, Title
@@ -73,7 +75,7 @@ $groups = $userNameGroups.memberOf | ForEach-Object { Get-ADGroup $_ }
 Write-Output ""
 Write-Output $groups
 
-$logFilePath = "\\\path\to\user\folder\groups.txt"
+$logFilePath = "\\path\to\user\folder\groups.txt"
 
 # Copy user's security groups to $groups.txt in their user folder
 Out-File $logFilePath -InputObject $userNameGroups.memberOf -Encoding utf8
@@ -81,17 +83,5 @@ Out-File $logFilePath -InputObject $userNameGroups.memberOf -Encoding utf8
 # TODO: Remove $userName's security groups from AD Object
 # Remove-ADGroupMember -Identity $_ -Members $userNameGroups -Confirm:$false
 
-# FYI: The backtick after the end quotes continues this command to the line directly after it because it's a really long line
 Copy-Item -Path "\\path\to\active\user\folder" `
     -Destination "\\path\to\terminated\user\folder"
-    
-
-### DEBUGGING CODE ###
-Read-Host -Prompt "Press Enter to exit"
-# If running in the console, wait for input before closing.
-if ($Host.Name -eq "ConsoleHost")
-{
-    Write-Host "Press any key to close..."
-    $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyUp") > $null
-}
-### END DEBUGGING ###
