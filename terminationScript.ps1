@@ -71,17 +71,32 @@ Write-Output $fullName
 # Get $userName's AD groups
 $userNameGroups = Get-ADUser -Identity $userName -Properties memberOf
 $groups = $userNameGroups.memberOf | ForEach-Object { Get-ADGroup $_ }
-# Debugging to ensure that groups are being selected properly
+
+# Write AD groups for clarification that it is the correct user 
 Write-Output ""
 Write-Output $groups
+Write-Output ""
 
-$logFilePath = "\\path\to\user\folder\groups.txt"
+# Confirm before starting termination
+$confirmation = Read-Host "Are you sure that you want to terminate"$userName "(y or n)"
 
-# Copy user's security groups to $groups.txt in their user folder
-Out-File $logFilePath -InputObject $userNameGroups.memberOf -Encoding utf8
+if ($confirmation -eq 'y') 
+{
+	$logFilePath = "\\path\to\user\folder\groups.txt"
 
-# TODO: Remove $userName's security groups from AD Object
-# Remove-ADGroupMember -Identity $_ -Members $userNameGroups -Confirm:$false
-
-Copy-Item -Path "\\path\to\active\user\folder" `
-    -Destination "\\path\to\terminated\user\folder"
+	# Copy user's security groups to $groups.txt in their user folder
+	Write-Host ""
+	Write-Host "Copying AD groups to file..."
+	Out-File $logFilePath -InputObject $userNameGroups.memberOf -Encoding utf8
+	
+	Write-Host "Removing user from AD groups..."
+	$groups |ForEach-Object { Remove-ADGroupMember -Identity $_ -Members $userName -Confirm:$false}
+	
+	Write-Host "Copying user folder to Terminated Share..."
+	Copy-Item -Path "\\path\to\user\folder\$userName" `
+		-Destination "\\path\to\terminated\directory" -Recurse -Force -ErrorAction SilentlyContinue
+	
+	Write-Host "Termination complete."
+} else {
+	Write-Host "Cancelled"
+}
