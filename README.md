@@ -1,4 +1,4 @@
 # ADTerminationScript
 A Windows PowerShell script to Terminate AD User Objects
 
-This script will ask the user to enter the Employee's first and last name, create a username for that user based on the first character of first name + last name convention (ex. mfonner) and then search AD for the object. It will then write the user's name and description to the shell and ask for a confirmation before starting the termination process. Next it copies the employee's AD groups to a .txt file in their user folder, copies their user folder to a terminated directory share, disables the AD object, and finally deletes the user folder. 
+The purpose of this script is to make the termination process faster and easier. This script prompts for the Employee's first and last name. It will then create a user name based on the first character of first name plus last name convention. (i.e. Matthew Fonner = MFonner) Then, the script write the user's AD groups to a text file in their user folder, removes them from said groups, copies their folder to a terminated users location, and will finally disable their AD object and move them into a terminated OU. 
