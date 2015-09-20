@@ -33,7 +33,7 @@ import-module activedirectory
 Do
 {
     # Prompt the user to input Employees' first and last name
-    Write-Host "Welcome to the NorthStar Termination Script."
+    Write-Host "Welcome to the Your Comapny Name Here Termination Script."
     $firstName = Read-Host "Please input the Employees' first name"
     $lastName = Read-Host "Please input the Employees' last name"
 
